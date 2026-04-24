@@ -8,6 +8,7 @@ const runtimeDbPath = resolve("/tmp", "shops.sqlite");
 const sourceDbCandidates = [
   fileURLToPath(new URL("../data/shops.sqlite", import.meta.url)),
   resolve(globalThis.process?.cwd?.() || ".", "data", "shops.sqlite"),
+  resolve(globalThis.process?.env?.LAMBDA_TASK_ROOT || "/var/task", "data", "shops.sqlite"),
   resolve("/var/task", "data", "shops.sqlite"),
 ];
 
@@ -121,12 +122,26 @@ export function normalizeFilterValue(value) {
   return value.trim();
 }
 
+export function getDbDebugInfo() {
+  return {
+    cwd: globalThis.process?.cwd?.() || null,
+    lambdaTaskRoot: globalThis.process?.env?.LAMBDA_TASK_ROOT || null,
+    runtimeDbPath,
+    runtimeDbExists: existsSync(runtimeDbPath),
+    sourceDbCandidates: sourceDbCandidates.map((path) => ({
+      path,
+      exists: existsSync(path),
+    })),
+  };
+}
+
 function getDb() {
   if (!db) {
     const sourceDbPath = sourceDbCandidates.find((candidate) => existsSync(candidate));
 
     if (!sourceDbPath) {
-      throw new Error(`SQLite database file not found. Checked: ${sourceDbCandidates.join(", ")}`);
+      const checked = sourceDbCandidates.join(", ");
+      throw new Error(`SQLite database file not found. Checked: ${checked}`);
     }
 
     if (!existsSync(runtimeDbPath)) {
