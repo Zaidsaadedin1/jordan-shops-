@@ -1,9 +1,15 @@
 import { DatabaseSync } from "node:sqlite";
+import { copyFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { categoryMap } from "../src/data/categoryMap.js";
 
-const cwd = globalThis.process?.cwd?.() || ".";
-const dbPath = resolve(cwd, "data", "shops.sqlite");
+const runtimeDbPath = resolve("/tmp", "shops.sqlite");
+const sourceDbCandidates = [
+  fileURLToPath(new URL("../data/shops.sqlite", import.meta.url)),
+  resolve(globalThis.process?.cwd?.() || ".", "data", "shops.sqlite"),
+  resolve("/var/task", "data", "shops.sqlite"),
+];
 
 let db;
 
@@ -117,7 +123,17 @@ export function normalizeFilterValue(value) {
 
 function getDb() {
   if (!db) {
-    db = new DatabaseSync(dbPath, { readonly: true });
+    const sourceDbPath = sourceDbCandidates.find((candidate) => existsSync(candidate));
+
+    if (!sourceDbPath) {
+      throw new Error(`SQLite database file not found. Checked: ${sourceDbCandidates.join(", ")}`);
+    }
+
+    if (!existsSync(runtimeDbPath)) {
+      copyFileSync(sourceDbPath, runtimeDbPath);
+    }
+
+    db = new DatabaseSync(runtimeDbPath, { readonly: true });
   }
 
   return db;
