@@ -11,8 +11,9 @@ node_modules
 dist
 dist-ssr
 *.local
-data/*.sqlite
 data/*.sqlite-*
+data/*.bak
+!data/shops.sqlite
 public/data/shops.json
 
 # Editor directories and files

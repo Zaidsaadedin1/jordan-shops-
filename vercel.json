@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/shops/*.js": {
+      "includeFiles": "data/shops.sqlite"
+    }
+  }
+}
